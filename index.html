@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expense Tracker · SpendWise</title>
+    <title>Expense Tracker · Full Feature</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&family=Outfit:wght@400..800&display=swap" rel="stylesheet">
@@ -18,19 +18,20 @@
                 <h2>SpendWise</h2>
             </div>
 
-            <!-- income -->
+            <!-- Budget Limit -->
             <div>
-                <h3>📊 Monthly Income</h3>
-                <form id="income-form">
+                <h3>🎯 Budget Limit</h3>
+                <form id="budget-form">
                     <div class="input-group">
                         <span class="currency-symbol">$</span>
-                        <input type="number" id="income-input" placeholder="e.g. 4200" min="0" step="any">
+                        <input type="number" id="budget-input" placeholder="Set monthly budget" min="0" step="any">
                     </div>
-                    <button type="submit" class="btn btn-secondary">Update Income</button>
+                    <button type="submit" class="btn btn-secondary">Set Budget</button>
                 </form>
+                <div id="budget-status" style="margin-top:8px;font-size:13px;color:var(--text-muted);"></div>
             </div>
 
-            <!-- add expense -->
+            <!-- Add Expense -->
             <div>
                 <h3>➕ Add Expense</h3>
                 <form id="expense-form">
@@ -41,7 +42,7 @@
                         <span class="currency-symbol">$</span>
                         <input type="number" id="expense-amount" placeholder="0.00" min="0.01" step="any" required>
                     </div>
-                    <select id="expense-category" required style="margin-bottom:12px;">
+                    <select id="expense-category" required style="margin-bottom:8px;">
                         <option value="" disabled selected>Category</option>
                         <option value="Food">🍕 Food</option>
                         <option value="Travel">✈️ Travel</option>
@@ -49,6 +50,9 @@
                         <option value="Bills">📄 Bills</option>
                         <option value="Other">📦 Other</option>
                     </select>
+                    <div class="input-group" style="margin-bottom:12px;">
+                        <input type="date" id="expense-date" required>
+                    </div>
                     <button type="submit" class="btn btn-primary">➕ Add Expense</button>
                 </form>
             </div>
@@ -61,19 +65,19 @@
                 <div class="header-date" id="current-date">📅 <span id="date-text">Loading...</span></div>
             </header>
 
-            <!-- stats -->
+            <!-- Stats -->
             <div class="stats-grid">
                 <div class="stat-card stat-income">
                     <div class="stat-icon">📈</div>
                     <div class="stat-details">
-                        <span class="stat-label">Income</span>
+                        <span class="stat-label">Total Income</span>
                         <span class="stat-value" id="total-income">$0</span>
                     </div>
                 </div>
                 <div class="stat-card stat-expense">
                     <div class="stat-icon">📉</div>
                     <div class="stat-details">
-                        <span class="stat-label">Expenses</span>
+                        <span class="stat-label">Total Expenses</span>
                         <span class="stat-value" id="total-expenses">$0</span>
                     </div>
                 </div>
@@ -84,28 +88,40 @@
                         <span class="stat-value" id="net-balance">$0</span>
                     </div>
                 </div>
+                <div class="stat-card stat-budget">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-details">
+                        <span class="stat-label">Budget Remaining</span>
+                        <span class="stat-value" id="budget-remaining">$0</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- two col -->
+            <!-- Two Column -->
             <div class="two-col">
-                <!-- history -->
+                <!-- History -->
                 <div class="panel">
                     <div class="panel-header">
                         <h3>📋 History</h3>
-                        <select id="category-filter" class="filter-select">
-                            <option value="All">All</option>
-                            <option value="Food">Food</option>
-                            <option value="Travel">Travel</option>
-                            <option value="Shopping">Shopping</option>
-                            <option value="Bills">Bills</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <select id="month-filter" class="filter-select">
+                                <option value="all">All Months</option>
+                            </select>
+                            <select id="category-filter" class="filter-select">
+                                <option value="All">All Categories</option>
+                                <option value="Food">Food</option>
+                                <option value="Travel">Travel</option>
+                                <option value="Shopping">Shopping</option>
+                                <option value="Bills">Bills</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
                     </div>
                     <ul class="expense-list" id="expense-list"></ul>
                     <div id="no-expenses" class="no-data">✨ No expenses yet. Add one!</div>
                 </div>
 
-                <!-- insights -->
+                <!-- Insights -->
                 <div class="panel">
                     <h3 style="margin-bottom:16px;">🧩 Breakdown</h3>
                     <div class="insight-center">
@@ -116,14 +132,48 @@
                             </svg>
                             <div class="chart-text">
                                 <span class="pct" id="expense-ratio">0%</span>
-                                <span class="lbl">of income</span>
+                                <span class="lbl">of budget</span>
                             </div>
                         </div>
                         <div class="legend" id="category-breakdown-legend"></div>
                     </div>
+                    <!-- Monthly Summary -->
+                    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
+                        <h4 style="font-size:14px;color:var(--text-secondary);margin-bottom:8px;">📊 Monthly Summary</h4>
+                        <div id="monthly-summary" style="font-size:13px;color:var(--text-muted);"></div>
+                    </div>
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal" style="display:none;">
+        <div class="modal-content glass">
+            <span class="modal-close" id="modal-close">&times;</span>
+            <h3 style="margin-bottom:16px;">✏️ Edit Expense</h3>
+            <form id="edit-form">
+                <input type="hidden" id="edit-id">
+                <div class="input-group" style="margin-bottom:8px;">
+                    <input type="text" id="edit-name" placeholder="Expense name" required>
+                </div>
+                <div class="input-group" style="margin-bottom:8px;">
+                    <span class="currency-symbol">$</span>
+                    <input type="number" id="edit-amount" placeholder="0.00" min="0.01" step="any" required>
+                </div>
+                <select id="edit-category" required style="margin-bottom:8px;">
+                    <option value="Food">🍕 Food</option>
+                    <option value="Travel">✈️ Travel</option>
+                    <option value="Shopping">🛍️ Shopping</option>
+                    <option value="Bills">📄 Bills</option>
+                    <option value="Other">📦 Other</option>
+                </select>
+                <div class="input-group" style="margin-bottom:12px;">
+                    <input type="date" id="edit-date" required>
+                </div>
+                <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+            </form>
+        </div>
     </div>
 
     <button id="themeToggle" class="theme-floating" aria-label="Toggle theme">🌙</button>
