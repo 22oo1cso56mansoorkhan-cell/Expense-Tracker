@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expense Tracker · Full Feature</title>
+    <title>Expense Tracker · SpendWise</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&family=Outfit:wght@400..800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div id="app" class="app-container">
@@ -16,6 +17,18 @@
             <div class="brand">
                 <div class="logo-icon">💰</div>
                 <h2>SpendWise</h2>
+            </div>
+
+            <!-- Income -->
+            <div>
+                <h3>📊 Monthly Income</h3>
+                <form id="income-form">
+                    <div class="input-group">
+                        <span class="currency-symbol">$</span>
+                        <input type="number" id="income-input" placeholder="Set monthly income" min="0" step="any">
+                    </div>
+                    <button type="submit" class="btn btn-secondary">Update Income</button>
+                </form>
             </div>
 
             <!-- Budget Limit -->
@@ -28,21 +41,21 @@
                     </div>
                     <button type="submit" class="btn btn-secondary">Set Budget</button>
                 </form>
-                <div id="budget-status" style="margin-top:8px;font-size:13px;color:var(--text-muted);"></div>
+                <div id="budget-status" class="budget-status"></div>
             </div>
 
             <!-- Add Expense -->
             <div>
                 <h3>➕ Add Expense</h3>
                 <form id="expense-form">
-                    <div class="input-group" style="margin-bottom:8px;">
+                    <div class="input-group">
                         <input type="text" id="expense-name" placeholder="What did you buy?" required>
                     </div>
-                    <div class="input-group" style="margin-bottom:8px;">
+                    <div class="input-group">
                         <span class="currency-symbol">$</span>
                         <input type="number" id="expense-amount" placeholder="0.00" min="0.01" step="any" required>
                     </div>
-                    <select id="expense-category" required style="margin-bottom:8px;">
+                    <select id="expense-category" required>
                         <option value="" disabled selected>Category</option>
                         <option value="Food">🍕 Food</option>
                         <option value="Travel">✈️ Travel</option>
@@ -50,7 +63,7 @@
                         <option value="Bills">📄 Bills</option>
                         <option value="Other">📦 Other</option>
                     </select>
-                    <div class="input-group" style="margin-bottom:12px;">
+                    <div class="input-group">
                         <input type="date" id="expense-date" required>
                     </div>
                     <button type="submit" class="btn btn-primary">➕ Add Expense</button>
@@ -62,7 +75,7 @@
         <main class="main-content">
             <header class="header-card glass">
                 <h1>Expense Tracker</h1>
-                <div class="header-date" id="current-date">📅 <span id="date-text">Loading...</span></div>
+                <div class="header-date">📅 <span id="date-text">Loading...</span></div>
             </header>
 
             <!-- Stats -->
@@ -70,7 +83,7 @@
                 <div class="stat-card stat-income">
                     <div class="stat-icon">📈</div>
                     <div class="stat-details">
-                        <span class="stat-label">Total Income</span>
+                        <span class="stat-label">Monthly Income</span>
                         <span class="stat-value" id="total-income">$0</span>
                     </div>
                 </div>
@@ -84,7 +97,7 @@
                 <div class="stat-card stat-balance" id="balance-card">
                     <div class="stat-icon">⚖️</div>
                     <div class="stat-details">
-                        <span class="stat-label">Balance</span>
+                        <span class="stat-label">Net Balance</span>
                         <span class="stat-value" id="net-balance">$0</span>
                     </div>
                 </div>
@@ -97,57 +110,47 @@
                 </div>
             </div>
 
-            <!-- Two Column -->
-            <div class="two-col">
-                <!-- History -->
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>📋 History</h3>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                            <div class="search-wrapper">
-                                <input type="text" id="search-input" placeholder="🔍 Search expenses..." class="search-input">
-                            </div>
-                            <select id="category-filter" class="filter-select">
-                                <option value="All">All Categories</option>
-                                <option value="Food">Food</option>
-                                <option value="Travel">Travel</option>
-                                <option value="Shopping">Shopping</option>
-                                <option value="Bills">Bills</option>
-                                <option value="Other">Other</option>
-                            </select>
-                            <select id="month-filter" class="filter-select">
-                                <option value="all">All Months</option>
-                            </select>
-                            <button id="clear-filters" class="btn-clear" title="Clear all filters">✕ Clear</button>
-                        </div>
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <div class="panel chart-panel">
+                    <h3>📈 Spending Trends</h3>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
                     </div>
-                    <div id="filter-stats" class="filter-stats"></div>
-                    <ul class="expense-list" id="expense-list"></ul>
-                    <div id="no-expenses" class="no-data">✨ No expenses found. Try adjusting your filters!</div>
                 </div>
+                <div class="panel chart-panel">
+                    <h3>🧩 Category Breakdown</h3>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
 
-                <!-- Insights -->
-                <div class="panel">
-                    <h3 style="margin-bottom:16px;">🧩 Breakdown</h3>
-                    <div class="insight-center">
-                        <div class="donut-wrap">
-                            <svg viewBox="0 0 100 100" width="150" height="150">
-                                <circle class="donut-bg" cx="50" cy="50" r="40" fill="transparent" stroke-width="12"></circle>
-                                <circle class="donut-fill" id="chart-progress" cx="50" cy="50" r="40" fill="transparent" stroke-width="12" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
-                            </svg>
-                            <div class="chart-text">
-                                <span class="pct" id="expense-ratio">0%</span>
-                                <span class="lbl">of budget</span>
-                            </div>
+            <!-- History Section -->
+            <div class="panel history-panel">
+                <div class="panel-header">
+                    <h3>📋 Expense History</h3>
+                    <div class="filter-controls">
+                        <div class="search-wrapper">
+                            <input type="text" id="search-input" placeholder="Search expenses..." class="search-input">
                         </div>
-                        <div class="legend" id="category-breakdown-legend"></div>
-                    </div>
-                    <!-- Monthly Summary -->
-                    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
-                        <h4 style="font-size:14px;color:var(--text-secondary);margin-bottom:8px;">📊 Monthly Summary</h4>
-                        <div id="monthly-summary" style="font-size:13px;color:var(--text-muted);"></div>
+                        <select id="category-filter" class="filter-select">
+                            <option value="All">All Categories</option>
+                            <option value="Food">Food</option>
+                            <option value="Travel">Travel</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Bills">Bills</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <select id="month-filter" class="filter-select">
+                            <option value="all">All Months</option>
+                        </select>
+                        <button id="clear-filters" class="btn-clear">✕ Clear</button>
                     </div>
                 </div>
+                <div id="filter-stats" class="filter-stats"></div>
+                <ul class="expense-list" id="expense-list"></ul>
+                <div id="no-expenses" class="no-data">✨ No expenses found. Add one to get started!</div>
             </div>
         </main>
     </div>
@@ -156,24 +159,24 @@
     <div id="edit-modal" class="modal" style="display:none;">
         <div class="modal-content glass">
             <span class="modal-close" id="modal-close">&times;</span>
-            <h3 style="margin-bottom:16px;">✏️ Edit Expense</h3>
+            <h3>✏️ Edit Expense</h3>
             <form id="edit-form">
                 <input type="hidden" id="edit-id">
-                <div class="input-group" style="margin-bottom:8px;">
+                <div class="input-group">
                     <input type="text" id="edit-name" placeholder="Expense name" required>
                 </div>
-                <div class="input-group" style="margin-bottom:8px;">
+                <div class="input-group">
                     <span class="currency-symbol">$</span>
                     <input type="number" id="edit-amount" placeholder="0.00" min="0.01" step="any" required>
                 </div>
-                <select id="edit-category" required style="margin-bottom:8px;">
+                <select id="edit-category" required>
                     <option value="Food">🍕 Food</option>
                     <option value="Travel">✈️ Travel</option>
                     <option value="Shopping">🛍️ Shopping</option>
                     <option value="Bills">📄 Bills</option>
                     <option value="Other">📦 Other</option>
                 </select>
-                <div class="input-group" style="margin-bottom:12px;">
+                <div class="input-group">
                     <input type="date" id="edit-date" required>
                 </div>
                 <button type="submit" class="btn btn-primary">💾 Save Changes</button>
@@ -181,7 +184,7 @@
         </div>
     </div>
 
-    <button id="themeToggle" class="theme-floating" aria-label="Toggle theme">🌙</button>
+    <button id="themeToggle" class="theme-floating">🌙</button>
 
     <script src="script.js"></script>
 </body>
