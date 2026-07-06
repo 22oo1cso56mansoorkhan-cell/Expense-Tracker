@@ -11,6 +11,7 @@ var expenses = [];
 var budget = 0;
 var currentFilter = 'All';
 var currentMonth = 'all';
+var searchQuery = '';
 
 // DOM Elements
 var budgetForm = document.getElementById('budget-form');
@@ -29,8 +30,11 @@ var netBalanceEl = document.getElementById('net-balance');
 var budgetRemainingEl = document.getElementById('budget-remaining');
 var balanceCard = document.getElementById('balance-card');
 
+var searchInput = document.getElementById('search-input');
 var categoryFilterSelect = document.getElementById('category-filter');
 var monthFilterSelect = document.getElementById('month-filter');
+var clearFiltersBtn = document.getElementById('clear-filters');
+var filterStatsEl = document.getElementById('filter-stats');
 var expenseListEl = document.getElementById('expense-list');
 var noExpensesEl = document.getElementById('no-expenses');
 
@@ -94,7 +98,6 @@ function loadData() {
             budget = 0;
         }
     } else {
-        // Fallback: check for old storage keys
         var oldExpenses = localStorage.getItem('expenses');
         var oldBudget = localStorage.getItem('budget');
         
@@ -192,6 +195,18 @@ function escapeHTML(str) {
         if (m === '"') return '&quot;';
         return m;
     });
+}
+
+function highlightText(text, query) {
+    if (!query || !text) return escapeHTML(text);
+    var escaped = escapeHTML(text);
+    var words = query.trim().split(/\s+/).filter(function(w) { return w.length > 0; });
+    var result = escaped;
+    words.forEach(function(word) {
+        var regex = new RegExp('(' + escapeHTML(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) + ')', 'gi');
+        result = result.replace(regex, '<mark style="background:var(--primary-glow);color:var(--text-primary);padding:0 2px;border-radius:2px;">$1</mark>');
+    });
+    return result;
 }
 
 // ============================================================
@@ -302,7 +317,7 @@ function saveEdit(e) {
 }
 
 // ============================================================
-// FILTERING & RENDERING
+// FILTERING & SEARCH
 // ============================================================
 
 function populateMonthFilter() {
@@ -324,24 +339,66 @@ function populateMonthFilter() {
     
     if (currentValue && months[currentValue]) {
         monthFilterSelect.value = currentValue;
+    } else {
+        monthFilterSelect.value = 'all';
+        currentMonth = 'all';
     }
 }
 
 function getFilteredExpenses() {
     var filtered = expenses.slice();
     
+    // Category filter
     if (currentFilter !== 'All') {
         filtered = filtered.filter(function(exp) { return exp.category === currentFilter; });
     }
     
+    // Month filter
     if (currentMonth !== 'all') {
         filtered = filtered.filter(function(exp) {
             return getMonthKey(exp.date) === currentMonth;
         });
     }
     
+    // Search filter
+    if (searchQuery.trim()) {
+        var query = searchQuery.trim().toLowerCase();
+        filtered = filtered.filter(function(exp) {
+            var nameMatch = exp.name.toLowerCase().includes(query);
+            var categoryMatch = exp.category.toLowerCase().includes(query);
+            return nameMatch || categoryMatch;
+        });
+    }
+    
     return filtered;
 }
+
+function updateFilterStats(filtered) {
+    if (!filterStatsEl) return;
+    var total = expenses.length;
+    var shown = filtered.length;
+    var filters = [];
+    if (currentFilter !== 'All') filters.push('Category: ' + currentFilter);
+    if (currentMonth !== 'all') filters.push('Month: ' + getMonthLabel(currentMonth));
+    if (searchQuery.trim()) filters.push('Search: "' + searchQuery.trim() + '"');
+    
+    var filterText = filters.length > 0 ? ' (filtered by ' + filters.join(', ') + ')' : '';
+    filterStatsEl.innerHTML = 'Showing <strong>' + shown + '</strong> of <strong>' + total + '</strong> expenses' + filterText;
+}
+
+function clearFilters() {
+    searchQuery = '';
+    currentFilter = 'All';
+    currentMonth = 'all';
+    if (searchInput) searchInput.value = '';
+    if (categoryFilterSelect) categoryFilterSelect.value = 'All';
+    if (monthFilterSelect) monthFilterSelect.value = 'all';
+    updateUI();
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
 
 function renderExpenses() {
     var filtered = getFilteredExpenses();
@@ -353,6 +410,7 @@ function renderExpenses() {
     
     if (sorted.length === 0) {
         noExpensesEl.style.display = 'block';
+        updateFilterStats(filtered);
         return;
     }
     
@@ -364,12 +422,15 @@ function renderExpenses() {
         var li = document.createElement('li');
         li.className = 'expense-item';
         
+        var highlightedName = searchQuery.trim() ? highlightText(exp.name, searchQuery) : escapeHTML(exp.name);
+        var highlightedCat = searchQuery.trim() ? highlightText(cat, searchQuery) : escapeHTML(cat);
+        
         li.innerHTML = `
             <div class="item-cat ${icon.cls}">${icon.emoji}</div>
             <div>
-                <div class="item-name">${escapeHTML(exp.name)}</div>
+                <div class="item-name">${highlightedName}</div>
                 <div class="item-meta">
-                    <span>${cat}</span> • <span>${formatDate(exp.date)}</span>
+                    <span>${highlightedCat}</span> • <span>${formatDate(exp.date)}</span>
                 </div>
             </div>
             <div class="item-amount">${formatCurrency(exp.amount)}</div>
@@ -393,6 +454,8 @@ function renderExpenses() {
             deleteExpense(this.dataset.id);
         });
     });
+    
+    updateFilterStats(filtered);
 }
 
 // ============================================================
@@ -463,28 +526,22 @@ function updateMonthlySummary() {
     }
     
     var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
-    html += '<div><strong>${monthLabel}</strong></div>';
-    html += '<div style="text-align:right;">${count} entries</div>';
+    html += '<div><strong>' + monthLabel + '</strong></div>';
+    html += '<div style="text-align:right;">' + count + ' entries</div>';
     html += '<div>Total spent</div>';
-    html += '<div style="text-align:right;font-weight:600;color:var(--danger);">${formatCurrency(total)}</div>';
+    html += '<div style="text-align:right;font-weight:600;color:var(--danger);">' + formatCurrency(total) + '</div>';
     if (topCategory) {
         html += '<div>Most frequent</div>';
-        html += '<div style="text-align:right;">${topCategory} (${topCount})</div>';
+        html += '<div style="text-align:right;">' + topCategory + ' (' + topCount + ')</div>';
     }
     html += '</div>';
     
-    // Use template literal with replacements
-    monthlySummaryEl.innerHTML = html
-        .replace(/\${monthLabel}/g, monthLabel)
-        .replace(/\${count}/g, count)
-        .replace(/\${formatCurrency\(total\)}/g, formatCurrency(total))
-        .replace(/\${topCategory}/g, topCategory || '—')
-        .replace(/\${topCount}/g, topCount);
+    monthlySummaryEl.innerHTML = html;
 }
 
 function updateStats() {
     var totalExp = expenses.reduce(function(sum, e) { return sum + e.amount; }, 0);
-    var balance = 0 - totalExp; // No income tracking, just expenses vs budget
+    var balance = 0 - totalExp;
     
     if (totalIncomeEl) totalIncomeEl.textContent = formatCurrency(0);
     if (totalExpensesEl) totalExpensesEl.textContent = formatCurrency(totalExp);
@@ -545,6 +602,14 @@ function setupEventListeners() {
         });
     }
     
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            searchQuery = this.value;
+            renderExpenses();
+            updateStats();
+        });
+    }
+    
     if (categoryFilterSelect) {
         categoryFilterSelect.addEventListener('change', function() {
             currentFilter = this.value;
@@ -561,6 +626,10 @@ function setupEventListeners() {
         });
     }
     
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', clearFilters);
+    }
+    
     if (themeToggleBtn) {
         themeToggleBtn.addEventListener('click', toggleTheme);
     }
@@ -574,12 +643,13 @@ function setupEventListeners() {
 }
 
 // ============================================================
-// EXPOSE FUNCTIONS TO GLOBAL (for inline onclick)
+// EXPOSE FUNCTIONS TO GLOBAL
 // ============================================================
 
 window.deleteExpense = deleteExpense;
 window.openEditModal = openEditModal;
 window.closeEditModal = closeEditModal;
+window.clearFilters = clearFilters;
 
 // ============================================================
 // INITIALIZATION

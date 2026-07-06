@@ -103,10 +103,10 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h3>📋 History</h3>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <select id="month-filter" class="filter-select">
-                                <option value="all">All Months</option>
-                            </select>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                            <div class="search-wrapper">
+                                <input type="text" id="search-input" placeholder="🔍 Search expenses..." class="search-input">
+                            </div>
                             <select id="category-filter" class="filter-select">
                                 <option value="All">All Categories</option>
                                 <option value="Food">Food</option>
@@ -115,10 +115,15 @@
                                 <option value="Bills">Bills</option>
                                 <option value="Other">Other</option>
                             </select>
+                            <select id="month-filter" class="filter-select">
+                                <option value="all">All Months</option>
+                            </select>
+                            <button id="clear-filters" class="btn-clear" title="Clear all filters">✕ Clear</button>
                         </div>
                     </div>
+                    <div id="filter-stats" class="filter-stats"></div>
                     <ul class="expense-list" id="expense-list"></ul>
-                    <div id="no-expenses" class="no-data">✨ No expenses yet. Add one!</div>
+                    <div id="no-expenses" class="no-data">✨ No expenses found. Try adjusting your filters!</div>
                 </div>
 
                 <!-- Insights -->
